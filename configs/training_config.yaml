@@ -1,0 +1,27 @@
+contrastive:
+  data_dir: "data_pkl/"
+  epochs: 100
+  batch_size: 256
+  lr: 3.0e-4
+  temperature: 0.07
+  segment_len: 64
+  checkpoint_dir: "checkpoints/contrastive/"
+  save_every: 10
+
+generation:
+  data_dir: "data_pkl/"
+  epochs: 200
+  batch_size: 32
+  lr: 1.0e-4
+  warmup_steps: 1000
+  checkpoint_dir: "checkpoints/generation/"
+  save_every: 5
+  eval_every: 5
+  gradient_clip: 1.0
+
+finetune:
+  data_dir: "data_pkl/ambient/"
+  epochs: 50
+  batch_size: 16
+  lr: 5.0e-5
+  checkpoint_dir: "checkpoints/finetune/"

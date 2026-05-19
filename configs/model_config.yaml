@@ -1,0 +1,16 @@
+vocab_size: 238
+d_model: 256
+max_seq_len: 512
+theme_encoder_layers: 2
+theme_encoder_heads: 4
+max_theme_len: 64
+decoder_layers: 4
+decoder_heads: 4
+ff_dim: 1024
+dropout: 0.1
+gpa_heads: 4
+gpa_gate_bias: -1.0
+temperature: 0.95
+top_p: 0.92
+repetition_penalty: 1.05
+label_smoothing: 0.1
