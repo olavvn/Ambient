@@ -13,7 +13,8 @@ from src.utils.config_loader import load_yaml
 @click.option("--output", "output_path", required=True, help="출력될 생성 미디 파일 경로")
 @click.option("--model_ckpt", default="checkpoints/best_model.pt", help="생성 모델 체크포인트 경로")
 @click.option("--tokens", "n_new_tokens", default=256, help="생성할 새로운 토큰 개수")
-def main(input_path, output_path, model_ckpt, n_new_tokens):
+@click.option("--style-dir", "style_dir", default=None, help="스타일 MIDI 폴더 경로 (이것을 설정하면 입력 멜로디 대신 여기서 테마를 뽑습니다)")
+def main(input_path, output_path, model_ckpt, n_new_tokens, style_dir):
     """
     입력 MIDI를 받아 테마를 추출하고, 새로운 MIDI 구간을 이어서 생성하는 테스트 스크립트.
     """
@@ -43,12 +44,19 @@ def main(input_path, output_path, model_ckpt, n_new_tokens):
     full_tokens = tokenizer.midi_to_tokens(midi)
     
     # 3. 테마 및 컨텍스트 추출
-    extractor = ThemeExtractor(device=device)
-    theme_tokens, _ = extractor.extract_from_tokens(full_tokens, midi=midi)
-    if not theme_tokens:
-        theme_tokens = full_tokens[:64]
-        
-    theme_tensor = torch.tensor(theme_tokens, dtype=torch.long, device=device).unsqueeze(0)
+    if style_dir:
+        from src.theme.style_library import StyleLibrary
+        print(f"[진행] 스타일 폴더에서 테마 블렌딩 중: {style_dir}")
+        style_lib = StyleLibrary(style_dir=style_dir, max_theme_len=cfg.max_theme_len)
+        theme_tensor = style_lib.get_blended_theme_tensor(device=device)
+        theme_tokens = theme_tensor[0].cpu().tolist()
+    else:
+        extractor = ThemeExtractor(device=device)
+        theme_tokens, _ = extractor.extract_from_tokens(full_tokens, midi=midi)
+        if not theme_tokens:
+            theme_tokens = full_tokens[:64]
+        theme_tensor = torch.tensor(theme_tokens, dtype=torch.long, device=device).unsqueeze(0)
+
     
     # 컨텍스트 (최대 길이로 자름)
     max_ctx = cfg.max_seq_len

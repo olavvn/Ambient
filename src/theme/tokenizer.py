@@ -20,12 +20,13 @@ PITCH_TOKENS = [f"PITCH_{p}" for p in range(128)]
 DUR_TOKENS = [f"DUR_{d}" for d in list(range(1, 33)) + [48, 64]]
 VEL_TOKENS = [f"VEL_{v}" for v in range(8, 120, 14)]
 SUSTAIN_TOKENS = ["SUSTAIN_ON", "SUSTAIN_OFF"]
+REVERB_TOKENS = ["REVERB_0", "REVERB_32", "REVERB_64", "REVERB_96", "REVERB_127"]
 INST_TOKENS = ["INST_PIANO", "INST_PAD", "INST_BASS", "INST_MELODY"]
 
 ALL_TOKENS = (
     SPECIAL_TOKENS + [BAR_TOKEN] + BEAT_TOKENS + POS_TOKENS
     + TEMPO_TOKENS + PITCH_TOKENS + DUR_TOKENS
-    + VEL_TOKENS + SUSTAIN_TOKENS + INST_TOKENS
+    + VEL_TOKENS + SUSTAIN_TOKENS + REVERB_TOKENS + INST_TOKENS
 )
 
 
@@ -98,6 +99,11 @@ class REMIAmbientTokenizer:
                     velocity=note.velocity,
                     instrument=inst_label,
                 ))
+            for cc in instrument.control_changes:
+                if cc.number == 64:  # Sustain pedal
+                    events.append(MusicEvent("sustain", cc.time, velocity=cc.value))
+                elif cc.number == 91: # Reverb depth
+                    events.append(MusicEvent("reverb", cc.time, velocity=cc.value))
         events.sort(key=lambda e: e.time)
         return events
 
@@ -125,6 +131,14 @@ class REMIAmbientTokenizer:
                 tempo = max(40, min(120, int(ev.velocity)))
                 tempo_token = f"TEMPO_{(tempo // 5) * 5}"
                 tokens.append(self.token2id.get(tempo_token, self.token2id["TEMPO_60"]))
+
+            elif ev.event_type == "sustain":
+                sustain_token = "SUSTAIN_ON" if ev.velocity >= 64 else "SUSTAIN_OFF"
+                tokens.append(self.token2id[sustain_token])
+
+            elif ev.event_type == "reverb":
+                reverb_token = self._closest_reverb_token(ev.velocity)
+                tokens.append(self.token2id[reverb_token])
 
             elif ev.event_type == "note":
                 inst_suffix = ev.instrument.split('_')[-1]
@@ -162,6 +176,16 @@ class REMIAmbientTokenizer:
                 try:
                     bpm = float(tok.split("_")[1])
                     current_beat_dur = 60.0 / bpm
+                except (ValueError, IndexError):
+                    pass
+            elif tok == "SUSTAIN_ON":
+                piano.control_changes.append(pretty_midi.ControlChange(64, 127, current_time))
+            elif tok == "SUSTAIN_OFF":
+                piano.control_changes.append(pretty_midi.ControlChange(64, 0, current_time))
+            elif tok.startswith("REVERB_"):
+                try:
+                    val = int(tok.split("_")[1])
+                    piano.control_changes.append(pretty_midi.ControlChange(91, val, current_time))
                 except (ValueError, IndexError):
                     pass
             elif tok.startswith("PITCH_"):
@@ -206,6 +230,11 @@ class REMIAmbientTokenizer:
         levels = list(range(8, 120, 14))
         closest = min(levels, key=lambda x: abs(x - vel))
         return f"VEL_{closest}"
+
+    def _closest_reverb_token(self, val: int) -> str:
+        levels = [0, 32, 64, 96, 127]
+        closest = min(levels, key=lambda x: abs(x - val))
+        return f"REVERB_{closest}"
 
     def encode(self, token_strs: List[str]) -> List[int]:
         return [self.token2id.get(t, self.pad_id) for t in token_strs]
