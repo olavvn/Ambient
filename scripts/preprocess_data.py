@@ -10,7 +10,7 @@ from src.theme.extractor import ThemeExtractor
 def process_file(midi_path: str, tokenizer: REMIAmbientTokenizer,
                  extractor: ThemeExtractor) -> dict:
     midi = pretty_midi.PrettyMIDI(midi_path)
-    theme_spans = extractor.extract_theme_spans(midi)
+    theme_tokens, theme_spans = extractor.extract_from_midi(midi)
     tokens = tokenizer.midi_to_tokens(midi, theme_spans=theme_spans)
     chunks = [tokens[i:i + 512] for i in range(0, len(tokens) - 512, 256)]
     return {
@@ -18,6 +18,7 @@ def process_file(midi_path: str, tokenizer: REMIAmbientTokenizer,
         "tokens": tokens,
         "chunks": chunks,
         "theme_spans": theme_spans,
+        "theme_tokens": theme_tokens, #theme tokens 추가
     }
 
 

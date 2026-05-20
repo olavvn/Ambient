@@ -19,7 +19,7 @@ class ThemeEncoder(nn.Module):
             batch_first=True, norm_first=True,
         )
         self.encoder = nn.TransformerEncoder(
-            encoder_layer, num_layers=cfg.theme_encoder_layers
+            encoder_layer, num_layers=cfg.theme_encoder_layers, enable_nested_tensor=False
         )
 
     def forward(self, theme_tokens: torch.Tensor,

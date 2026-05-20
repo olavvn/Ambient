@@ -1,0 +1,15 @@
+# Virtual Environment
+myenv/
+venv/
+env/
+.env
+
+# Data and Examples
+data_pkl/
+examples/
+
+# Output and Cache
+__pycache__/
+*.pyc
+outputs/
+checkpoints/

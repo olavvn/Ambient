@@ -25,7 +25,7 @@ class SegmentEncoder(nn.Module):
             dim_feedforward=d_model * 4, dropout=0.1,
             batch_first=True, norm_first=True,
         )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers, enable_nested_tensor=False)
         self.proj_head = nn.Sequential(
             nn.Linear(d_model, d_model),
             nn.ReLU(),

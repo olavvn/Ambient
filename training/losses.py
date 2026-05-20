@@ -32,8 +32,8 @@ class ThemeAwareCrossEntropy(nn.Module):
             targets: (B, L)
         """
         B, L, V = logits.shape
-        loss = self.ce(logits.view(B * L, V), targets.view(B * L))
-        loss = loss.view(B, L)
+        loss = self.ce(logits.reshape(B * L, V), targets.reshape(B * L))
+        loss = loss.reshape(B, L)
 
         theme_ref_mask = (targets[:, :-1] == self.theme_ref_id).float()
         weight = torch.ones_like(loss)
