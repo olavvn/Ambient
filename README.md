@@ -258,6 +258,25 @@ REMI+ 방식을 앰비언트에 맞게 변형한 **REMIAmbientTokenizer**.
 | 서스테인 | `SUSTAIN_ON` `SUSTAIN_OFF` | 2 |
 | 악기 | `INST_PIANO` `INST_PAD` `INST_BASS` `INST_MELODY` | 4 |
 
+**MIDI 특성의 순서 문제 해결 (REMI 문법):**
+일반적으로 미디 데이터는 `(시작시간, Pitch, Velocity, Duration)` 형태의 고정된 표/쌍으로 다뤄지지만, 언어 모델은 1차원적인 '단어의 나열(시퀀스)'만 이해합니다. 이를 해결하기 위해 각 특성을 "시간의 흐름에 따른 사건(Event)의 나열"이라는 문법으로 펼칩니다.
+
+1. **시간/악기 제어:** 마디(`[BAR]`)와 박자 위치(`[POS_0]`), 악기(`[INST_PIANO]`)를 선언.
+2. **음표 3연속 묶음:** 음표가 등장하면 반드시 `[PITCH_60] → [DUR_16] → [VEL_64]` 순서로 3개의 토큰이 연달아 오도록 강제합니다.
+
+결과적으로 미디는 하나의 1차원 문장으로 변환됩니다.
+`"BAR" "POS_0" "TEMPO_60" "INST_PIANO" "PITCH_60" "DUR_16" "VEL_64" ...`
+
+**디코딩 예외 처리 (안전 장치):**
+언어 모델이 스스로 이 문법을 깨우치도록 유도하되, 생성 시점에 AI의 실수로 시퀀스가 꼬이는 것을 방지하기 위해 강제 파싱 로직을 적용합니다.
+```python
+# PITCH 토큰을 발견하면 강제로 다음 두 개의 토큰을 가져오고, 
+# 만약 순서가 꼬여서 다른게 들어있다면 기본값(DUR_4, VEL_64)으로 덮어씌워버림
+dur_tok = tokens[i + 1] if i + 1 < len(tokens) else "DUR_4"
+vel_tok = tokens[i + 2] if i + 2 < len(tokens) else "VEL_64"
+```
+이를 통해 구조가 깨지지 않은 완벽한 MIDI 파일을 보장합니다.
+
 **주요 메서드:**
 
 ```python
@@ -652,7 +671,19 @@ generation:
 
 ## 8. 테스트
 
-### 전체 테스트 실행
+### 간단한 수동 생성 및 재생 테스트 (스크립트)
+
+복잡한 실시간 엔진을 거치지 않고, 단일 파일 단위로 모델이 멜로디를 잘 이어붙여 생성하는지 테스트하고 결과물을 스피커로 바로 들어볼 수 있는 편리한 스크립트입니다.
+
+```bash
+# 1. 입력 미디(시드)를 주고 모델이 생성한 결과를 저장하기 (GPU 가속 지원)
+python test_generate.py --input examples/theme.mid --output outputs/generated_test.mid
+
+# 2. 저장된 결과물을 Windows 기본 신디사이저로 오디오 변환 없이 바로 들어보기
+python play_midi.py --input outputs/generated_test.mid
+```
+
+### 전체 단위 테스트 실행 (pytest)
 
 ```bash
 pytest tests/ -v --asyncio-mode=auto
