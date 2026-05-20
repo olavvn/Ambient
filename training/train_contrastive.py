@@ -15,7 +15,12 @@ def train(config_path: str = "configs/training_config.yaml"):
                         shuffle=True, num_workers=0)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    encoder = SegmentEncoder(vocab_size=238, d_model=256, proj_dim=128).to(device)
+    model_cfg = load_yaml("configs/model_config.yaml")
+    encoder = SegmentEncoder(
+        vocab_size=model_cfg.get("vocab_size", 243),
+        d_model=model_cfg.get("d_model", 256),
+        proj_dim=128
+    ).to(device)
     loss_fn = NTXentLoss(temperature=cfg["temperature"])
     optimizer = torch.optim.AdamW(encoder.parameters(), lr=cfg["lr"],
                                   weight_decay=1e-4)
