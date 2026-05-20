@@ -12,4 +12,6 @@ examples/
 __pycache__/
 *.pyc
 outputs/
-checkpoints/
+
+# Documents
+*.pdf
