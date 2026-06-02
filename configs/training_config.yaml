@@ -1,6 +1,6 @@
 contrastive:
   data_dir: "data_pkl/"
-  epochs: 100
+  epochs: 10
   batch_size: 256
   lr: 3.0e-4
   temperature: 0.07
@@ -10,7 +10,7 @@ contrastive:
 
 generation:
   data_dir: "data_pkl/"
-  epochs: 200
+  epochs: 10
   batch_size: 32
   lr: 1.0e-4
   warmup_steps: 1000

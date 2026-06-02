@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -m pytest tests/ -q)"
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(Get-Content \"D:\\\\학교\\\\26.1\\\\Deep Learning for Music and Audio\\\\Project\\\\ambient_v2\\\\Ambient\\\\Ambient\\\\test_tokenizer\\\\claude.md\")"
     ]
   }
 }

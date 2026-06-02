@@ -7,6 +7,7 @@ env/
 # Data and Examples
 data_pkl/
 examples/
+test_tokenizer/test_midi/
 
 # Output and Cache
 __pycache__/
