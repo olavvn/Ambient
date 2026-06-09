@@ -1,8 +1,10 @@
 streaming:
-  chunk_size: 128
-  context_len: 512
-  queue_maxsize: 4
-  device: "cuda"
+  chunk_size: 64
+  max_context: 2048
+  temperature: 1.0
+  top_p: 0.9
+  top_k: 0
+  queue_maxsize: 8
 
 audio:
   sample_rate: 44100
@@ -21,7 +23,3 @@ fluidsynth:
 midi_input:
   port: null
   buffer_sec: 2.0
-
-transition:
-  strategy: "bar_boundary"
-  max_wait_bars: 4

@@ -1,27 +1,40 @@
-contrastive:
-  data_dir: "data_pkl/"
-  epochs: 10
-  batch_size: 256
-  lr: 3.0e-4
-  temperature: 0.07
-  segment_len: 64
-  checkpoint_dir: "checkpoints/contrastive/"
-  save_every: 10
+pretrained:
+  base_model: "stanford-crfm/music-medium-800k"
+  resize_embeddings: true
+  reinit_embeddings: true
 
-generation:
-  data_dir: "data_pkl/"
-  epochs: 10
-  batch_size: 32
-  lr: 1.0e-4
-  warmup_steps: 1000
-  checkpoint_dir: "checkpoints/generation/"
-  save_every: 5
-  eval_every: 5
-  gradient_clip: 1.0
+data:
+  train_dir: "data/processed/train"
+  val_dir: "data/processed/val"
+  num_workers: 4
 
-finetune:
-  data_dir: "data_pkl/ambient/"
-  epochs: 50
+phase1:
+  description: "임베딩 적응"
+  epochs: 5
+  lr: 1.0e-3
+  freeze_backbone: true
   batch_size: 16
-  lr: 5.0e-5
-  checkpoint_dir: "checkpoints/finetune/"
+  warmup_steps: 500
+
+phase2:
+  description: "전체 파인튜닝"
+  epochs: 25
+  lr_embedding: 1.0e-4
+  lr_backbone: 1.0e-5
+  freeze_backbone: false
+  batch_size: 8
+  gradient_accumulation: 4
+  warmup_steps: 1000
+
+common:
+  optimizer: AdamW
+  weight_decay: 0.01
+  betas: [0.9, 0.95]
+  lr_schedule: cosine
+  gradient_clip: 1.0
+  label_smoothing: 0.1
+  seq_len: 2048
+
+output:
+  checkpoint_dir: "checkpoints"
+  save_every: 5

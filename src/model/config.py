@@ -1,27 +1,17 @@
-"""모델 하이퍼파라미터 설정"""
-from dataclasses import dataclass
+"""모델 설정"""
+from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
 class ModelConfig:
-    vocab_size: int = 243
-    d_model: int = 512
-    max_seq_len: int = 1024
+    # 사전학습 모델
+    pretrained_model_id: str = "stanford-crfm/music-medium-800k"
+    vocab_size: int = 274          # TSD Ambient 어휘 크기
+    reinit_embeddings: bool = True
 
-    theme_encoder_layers: int = 4
-    theme_encoder_heads: int = 8
-    max_theme_len: int = 128
-
-    decoder_layers: int = 8
-    decoder_heads: int = 8
-    ff_dim: int = 2048
-    dropout: float = 0.1
-
-    gpa_heads: int = 8
-    gpa_gate_bias: float = 0.0
-
-    temperature: float = 0.95
-    top_p: float = 0.92
-    repetition_penalty: float = 1.05
-
+    # 생성 파라미터
+    temperature: float = 1.0
+    top_p: float = 0.9
+    top_k: int = 0
     label_smoothing: float = 0.1

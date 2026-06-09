@@ -1,53 +1,77 @@
-"""MIDI 전처리 스크립트"""
-import pickle
-import pathlib
+"""
+MIDI 파일 → pkl 변환 스크립트.
+지정한 폴더의 MIDI 파일을 TSDTokenizer로 토큰화하여
+out_dir/train, out_dir/val 폴더에 pkl로 저장한다.
+
+사용법:
+    python scripts/preprocess_data.py \
+        --midi_dir  /path/to/midi_files \
+        --out_dir   /path/to/data/processed \
+        --train_ratio 0.9
+"""
 import argparse
+import pickle
+import sys
+import os
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pretty_midi
-from src.theme.tokenizer import REMIAmbientTokenizer
-from src.theme.extractor import ThemeExtractor
+from src.tokenizer import TSDTokenizer
 
 
-def process_file(midi_path: str, tokenizer: REMIAmbientTokenizer,
-                 extractor: ThemeExtractor) -> dict:
-    midi = pretty_midi.PrettyMIDI(midi_path)
-    theme_tokens, theme_spans = extractor.extract_from_midi(midi)
-    tokens = tokenizer.midi_to_tokens(midi, theme_spans=theme_spans)
-    chunks = [tokens[i:i + 512] for i in range(0, len(tokens) - 512, 256)]
-    return {
-        "path": midi_path,
-        "tokens": tokens,
-        "chunks": chunks,
-        "theme_spans": theme_spans,
-        "theme_tokens": theme_tokens, #theme tokens 추가
+def preprocess(midi_dir: str, out_dir: str, train_ratio: float = 0.9):
+    tok = TSDTokenizer()
+
+    midi_paths = sorted(Path(midi_dir).glob("**/*.mid")) + \
+                 sorted(Path(midi_dir).glob("**/*.midi"))
+
+    if not midi_paths:
+        print(f"[ERROR] MIDI 파일을 찾을 수 없습니다: {midi_dir}")
+        sys.exit(1)
+
+    print(f"MIDI 파일 수: {len(midi_paths)}")
+
+    split_idx = max(1, int(len(midi_paths) * train_ratio))
+    splits = {
+        "train": midi_paths[:split_idx],
+        "val":   midi_paths[split_idx:] if split_idx < len(midi_paths) else midi_paths[-1:],
     }
 
+    total_saved = 0
+    for split_name, paths in splits.items():
+        out_split = Path(out_dir) / split_name
+        out_split.mkdir(parents=True, exist_ok=True)
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", default="data/raw_midi/")
-    parser.add_argument("--output", default="data_pkl/")
-    args = parser.parse_args()
+        saved = 0
+        for i, p in enumerate(paths):
+            try:
+                midi   = pretty_midi.PrettyMIDI(str(p))
+                tokens = tok.midi_to_tokens(midi)
+                if len(tokens) < 32:
+                    print(f"  SKIP (짧음): {p.name}")
+                    continue
+                out_path = out_split / f"{p.stem}_{i:04d}.pkl"
+                with open(out_path, "wb") as f:
+                    pickle.dump({"tokens": tokens}, f)
+                saved += 1
+                if (i + 1) % 50 == 0:
+                    print(f"  [{split_name}] {i+1}/{len(paths)} 처리 중...")
+            except Exception as e:
+                print(f"  WARN [{p.name}]: {e}")
 
-    tokenizer = REMIAmbientTokenizer()
-    extractor = ThemeExtractor()
+        print(f"{split_name}: {saved}개 저장 → {out_split}")
+        total_saved += saved
 
-    data_dir = pathlib.Path(args.input)
-    out_dir = pathlib.Path(args.output)
-    out_dir.mkdir(exist_ok=True)
-
-    midi_files = list(data_dir.glob("**/*.mid")) + list(data_dir.glob("**/*.midi"))
-    print(f"처리할 MIDI 파일: {len(midi_files)}개")
-
-    for f in midi_files:
-        try:
-            result = process_file(str(f), tokenizer, extractor)
-            out_path = out_dir / (f.stem + ".pkl")
-            with open(out_path, "wb") as fp:
-                pickle.dump(result, fp)
-            print(f"처리 완료: {f.name} → {len(result['chunks'])} 청크")
-        except Exception as e:
-            print(f"오류: {f.name} — {e}")
+    print(f"\n완료: 총 {total_saved}개 pkl 파일 생성")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--midi_dir",    required=True,  help="MIDI 파일 폴더")
+    parser.add_argument("--out_dir",     required=True,  help="출력 폴더 (train/, val/ 생성됨)")
+    parser.add_argument("--train_ratio", type=float, default=0.9, help="train 비율 (기본 0.9)")
+    args = parser.parse_args()
+
+    preprocess(args.midi_dir, args.out_dir, args.train_ratio)

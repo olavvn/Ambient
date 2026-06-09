@@ -150,7 +150,6 @@ class TSDTokenizer:
                         tempo_map: List[Tuple[float, float]]) -> List[dict]:
         events: List[dict] = []
 
-        # Tempo events (priority 0 → 같은 박자에서 노트보다 먼저 emit)
         for t, bpm in tempo_map:
             events.append({
                 "type": "tempo", "beats": self._seconds_to_beats(t, tempo_map),
@@ -180,7 +179,6 @@ class TSDTokenizer:
 
     def tokens_to_midi(self, token_ids: List[int],
                        bpm: float = 60.0) -> pretty_midi.PrettyMIDI:
-        # First TEMPO token sets the MIDI header tempo
         init_bpm = bpm
         for tid in token_ids:
             tok = self.id2token.get(tid, "[PAD]")
