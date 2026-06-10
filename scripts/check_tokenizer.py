@@ -84,7 +84,7 @@ def main():
     # Print first 50 tokens
     print("\n--- First 50 Tokens (ID and String) ---")
     token_strs = tokenizer.decode(tokens)
-    for idx, (tid, tstr) in enumerate(zip(tokens[:50], token_strs[:50])):
+    for idx, (tid, tstr) in enumerate(zip(tokens[:100], token_strs[:100])):
         print(f"{idx:02d}: ID={tid:<5} -> {tstr}")
         
     # Count token type frequencies
