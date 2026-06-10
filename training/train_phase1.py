@@ -2,8 +2,12 @@
 Phase 1: 임베딩 적응 학습.
 트랜스포머 블록을 동결하고 토큰 임베딩 + LM head만 학습한다.
 """
-import argparse
+import sys
 import os
+# 프로젝트 루트를 sys.path에 추가 (어느 디렉터리에서 실행해도 src.* 임포트 가능)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import argparse
 import torch
 from torch.utils.data import DataLoader, random_split
 from torch.optim import AdamW

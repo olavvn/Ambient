@@ -2,8 +2,12 @@
 Phase 2: 전체 파인튜닝.
 임베딩/LM head와 트랜스포머 블록에 차별화된 학습률을 적용한다.
 """
-import argparse
+import sys
 import os
+# 프로젝트 루트를 sys.path에 추가 (어느 디렉터리에서 실행해도 src.* 임포트 가능)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import argparse
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
